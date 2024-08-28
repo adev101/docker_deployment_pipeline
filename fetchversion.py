@@ -32,7 +32,7 @@ for line in proc.stdout:
 
 
         version = int(res[1])+1
-        version=res[0]+str(version)
+        version="env.version=\""+res[0]+str(version)+"\""
 
         file = open('version.txt', 'w')
         file.write(version)
