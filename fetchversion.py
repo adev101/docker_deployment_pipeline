@@ -34,7 +34,7 @@ for line in proc.stdout:
         version = int(res[1])+1
         version="env.version=\""+res[0]+str(version)+"\""
 
-        file = open('version.txt', 'w')
+        file = open('version.groovy', 'w')
         file.write(version)
         file.close()
         break
