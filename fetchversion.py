@@ -22,5 +22,9 @@ for line in proc.stdout:
 
         print(version)
 
+        file = open('version.txt', 'w')
+        file.write(version)
+        file.close()
+        break
 
         break
