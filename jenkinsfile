@@ -1,0 +1,132 @@
+pipeline{
+    agent any
+    
+    tools{
+        maven 'maven'
+    }
+    
+    // environment{
+    //     version=1
+    // }
+    
+    
+    stages{
+        stage('test'){
+            steps{
+                script{
+                    git branch: 'master',
+					url: 'https://github.com/adev101/spring-boot-war2.git'
+                }
+                
+                withMaven{
+                    sh "mvn clean test"
+                }
+            }
+        }
+        stage('Build artifact'){
+            steps{
+                script{
+                    git branch: 'master',
+                    url: 'https://github.com/adev101/spring-boot-war2.git'
+                }
+                withMaven{
+                    sh "mvn clean install"
+                }
+            }
+        }
+        stage('Deploy to local tomcat'){
+            steps{
+                script{
+                    sh "cp ./target/*.war ./target/app.war"
+                    //sh "docker cp beautiful_khorana:./target/app.war /home/ubuntu/tomcat/webapp/"
+                }
+            }
+        }
+        // stage('Install Python'){
+        //     steps{
+        //         script{
+        //             sh "sudo apt install python-is-python3 -y"
+        //         }
+        //     }
+        // }
+        stage('Build Docker Image'){
+            steps{
+                script{
+                    sh "python fetchversion.py"
+                    
+                    // env.version=sh 'curl https://hub.docker.com/v2/repositories/abhi2086/test/tags  | grep -o \'"name": *"[^"]*\' | grep -o \'[^"]*$\' | head -1 '
+                    sh "ls -lrt"
+                    load 'version.groovy'
+                    
+                    sh "echo '${env.version}'"
+                    
+                    sh "docker build -t abhi2086/test:${env.version} ."
+                    
+                    // sh "rm -rf version.groovy"
+                }
+            }
+            
+        }
+        stage('Login and push to docker hub'){
+            steps{
+                
+                // script{
+                //   load 'version.groovy'
+                //   sh "echo '${env.version}'"
+                // }
+                
+                // withEnv(["CRED=credentials('dockercred')"]){
+                //     //sh "chmod +x -R ${env.WORKSPACE}"
+                //     //sh "cat /home/ubuntu/dockerpassword"
+                //     //sh "cat /home/ubuntu/dockerpassword | docker login --username abhi2086 --password-stdin"
+                //     sh 'docker login --username abhi2086 --password $CRED_PSW'
+                //     sh "docker push abhi2086/test:${env.version}"
+                // }
+            //     withCredentials([usernamePassword(credentialsId: 'dockercred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+            //   sh '''
+
+            //         docker login --username $USERNAME --password $PASSWORD
+            //         docker push abhi2086/test:${env.version}
+            //   '''
+            //   }
+              withCredentials([usernamePassword(credentialsId: 'dockercred', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+               script{
+                    load 'version.groovy'
+                    sh "echo '${env.version}'"
+                    sh 'docker login --username $USERNAME --password $PASSWORD'
+                    sh "docker push abhi2086/test:'${env.version}'"
+                   
+               }
+              }
+            }
+            
+        }
+        stage('Pull Image from Docker hub'){
+            steps{
+                sh "docker pull abhi2086/test:${env.version}"
+            }
+        }
+        stage('Check and delete any existing Docker Container'){
+            steps{
+                script{
+                    sh 'python containerCheck.py'
+                    // sh 'echo ${image_id}'
+                    // sh 'export count=docker container ls --all --filter=ancestor=${env.image_id} --format "{{.ID}}"|wc -l'
+                    
+                    // // if($count -eq 0){
+                    // //     echo "No containers presently running"
+                    // // }
+                    // // else{
+                    // sh 'export container_id=docker container ls --all --filter=ancestor=${env.image_id} --format "{{.ID}}"'
+                    // sh 'docker kill ${container_id}'
+                    // // }
+                }
+            }
+        }
+        stage('deploy docker image on docker container'){
+            steps{
+                sh "docker run -d -p 5000:8080 abhi2086/test:${env.version}"
+            }
+        }
+    }
+}
