@@ -1,3 +1,3 @@
 FROM nginx
-LABEL maintainer="Sourabh Singh"
+LABEL maintainer="Abhinav Dev"
 COPY index.html /usr/share/nginx/html
